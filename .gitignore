@@ -1,0 +1,26 @@
+# Ignora gli eseguibili compilati
+
+upscaling_matrice
+upscaling_sequenziale
+
+upscale_naive
+
+5.1_upscale_constant_memory
+5.2_upscale_shared
+5.3_upscale_vectorized
+
+final_vectorized
+
+
+# Ignora le immagini di test (troppo pesanti)
+*.jpg
+*.png
+*.bmp
+
+# Ignora i report pesanti di Nsight Compute
+*.ncu-rep
+
+# Ignora file temporanei e di sistema
+.DS_Store
+*.o
+*.swp

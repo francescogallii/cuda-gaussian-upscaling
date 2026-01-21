@@ -29,9 +29,8 @@ __constant__ float c_kernel[MAX_KERNEL_SIZE];
 #define TILE_W (BLOCK_W + 2 * RADIUS)
 #define TILE_H (BLOCK_H + 2 * RADIUS)
 
-// ========================================================================
 // KERNEL CUDA (SHARED MEMORY + CONSTANT MEMORY)
-// ========================================================================
+
 __global__ void upscale_kernel_shared(unsigned char* d_input, unsigned char* d_output, 
                                       int w_in, int h_in, int w_out, int h_out, 
                                       int channels) {
@@ -81,7 +80,7 @@ __global__ void upscale_kernel_shared(unsigned char* d_input, unsigned char* d_o
         smem[local_y][local_x][2] = d_input[idx + 2];
     }
 
-    // Barriera: Aspettiamo che TUTTI abbiano finito di caricare
+    // Barriera: Aspettiamo che tutti abbiano finito di caricare
     __syncthreads();
 
     // --- FASE 2: CALCOLO (Tutto in Shared Memory) ---

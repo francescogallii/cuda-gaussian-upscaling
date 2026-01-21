@@ -6,7 +6,7 @@ upscaling_sequenziale
 upscale_naive
 
 5.1_upscale_constant_memory
-5.2_upscale_shared
+5.2_upscale_shared_memory
 5.3_upscale_vectorized
 
 final_vectorized

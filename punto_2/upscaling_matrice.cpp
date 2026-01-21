@@ -4,38 +4,30 @@
 #include <iomanip>
 #include <algorithm>
 
-// ==========================================
-// SEZIONE CONFIGURAZIONE (MODULARE)
-// ==========================================
+// --- CONFIGURAZIONE ---
 
-// Fattore di scala (2 = raddoppia larghezza e altezza -> quadruplica i pixel totali)
-const int SCALE_FACTOR = 2;
+const int SCALE_FACTOR = 2; // Fattore di upscaling (2x = 4 volte i pixel totali)
 
-// Sigma per la distribuzione Gaussiana (controlla quanto velocemente scende il peso)
-// Un valore più basso da molto peso al centro, un valore più alto ammorbidisce l'immagine.
+// Sigma controlla lo spread della distribuzione. 
+// 0.75f bilancia nitidezza e smoothing per evitare aliasing.
 const float SIGMA = 0.75f; 
 
-// ==========================================
 // STRUTTURE DATI
-// ==========================================
 
 struct Image {
     int width;
     int height;
-    std::vector<int> data; // Vettore linearizzato
+    std::vector<int> data; // Vettore linearizzato per massimizzare la cache locality
 
-    // Costruttore per inizializzare un'immagine vuota
     Image(int w, int h) : width(w), height(h), data(w * h, 0) {}
 
-    // Metodo helper per accedere ai pixel (Gestione bordi / Clamping)
-    // Se chiediamo un pixel fuori dai bordi, restituisce il pixel del bordo più vicino.
+    // Accesso sicuro ai pixel: gestisce i bordi tramite clamping (ripetizione dell'ultimo pixel valido)
     int get_pixel_safe(int x, int y) const {
         int clamped_x = std::max(0, std::min(x, width - 1));
         int clamped_y = std::max(0, std::min(y, height - 1));
         return data[clamped_y * width + clamped_x];
     }
 
-    // Metodo per settare un pixel
     void set_pixel(int x, int y, int value) {
         if (x >= 0 && x < width && y >= 0 && y < height) {
             data[y * width + x] = value;
@@ -43,80 +35,68 @@ struct Image {
     }
 };
 
-// ==========================================
 // LOGICA DI CALCOLO
-// ==========================================
 
-// 1. Funzione per decidere la dimensione della sottomatrice (Raggio del kernel)
-// Se l'immagine è molto piccola, usiamo un raggio piccolo. Se è grande, possiamo permetterci più precisione.
+// Adatta la dimensione del kernel in base alla risoluzione input.
+// Evita overhead inutile su immagini molto piccole.
 int get_dynamic_radius(int width, int height) {
     int min_dim = std::min(width, height);
-    if (min_dim < 10) return 1;      // Sottomatrice 3x3 (Raggio 1)
-    if (min_dim < 100) return 2;     // Sottomatrice 5x5 (Raggio 2)
-    return 3;                        // Sottomatrice 7x7 (Raggio 3) per immagini grandi
+    if (min_dim < 10) return 1;      // Kernel 3x3
+    if (min_dim < 100) return 2;     // Kernel 5x5
+    return 3;                        // Kernel 7x7 (Standard per Hi-Res)
 }
 
-// 2. Calcolo del Peso (Funzione Gaussiana)
-// Restituisce un peso alto se la distanza è 0, basso se la distanza è alta.
+// Calcola il peso gaussiano basato sulla distanza euclidea al quadrato
 float calculate_weight(float dx, float dy) {
     float distance_sq = dx * dx + dy * dy;
-    // Formula Gaussiana: e^(-(x^2 + y^2) / (2 * sigma^2))
     return std::exp(-distance_sq / (2 * SIGMA * SIGMA));
 }
 
-// 3. Funzione di Upscaling Principale
 Image upscale_image(const Image& input) {
     int new_width = input.width * SCALE_FACTOR;
     int new_height = input.height * SCALE_FACTOR;
     
     Image output(new_width, new_height);
 
-    // Calcolo dinamico del raggio della sottomatrice
     int radius = get_dynamic_radius(input.width, input.height);
-    std::cout << "DEBUG: Raggio Kernel calcolato: " << radius 
-              << " (Sottomatrice " << (radius*2+1) << "x" << (radius*2+1) << ")\n";
+    std::cout << "INFO: Kernel size: " << (radius*2+1) << "x" << (radius*2+1) << "\n";
 
-    // Ciclo su ogni pixel dell'immagine di OUTPUT
     for (int y_out = 0; y_out < new_height; ++y_out) {
         for (int x_out = 0; x_out < new_width; ++x_out) {
             
-            // Mappatura inversa: Dove cade questo pixel nell'immagine originale?
-            // Aggiungiamo 0.5 per centrare il campionamento (convenzione grafica standard)
+            // Mapping inverso Output -> Input.
+            // L'offset 0.5 garantisce l'allineamento corretto tra i centri dei pixel delle due griglie.
             float src_x = (x_out + 0.5f) / SCALE_FACTOR - 0.5f;
             float src_y = (y_out + 0.5f) / SCALE_FACTOR - 0.5f;
 
-            // Coordinate intere del pixel centrale nell'input
+            // Nearest integer pixel (centro del kernel)
             int center_x = std::round(src_x);
             int center_y = std::round(src_y);
 
             float total_weight = 0.0f;
             float weighted_sum = 0.0f;
 
-            // Analisi della Sottomatrice (vicini attorno a center_x, center_y)
+            // Convoluzione sul vicinato
             for (int ky = -radius; ky <= radius; ++ky) {
                 for (int kx = -radius; kx <= radius; ++kx) {
                     
-                    // Coordinate del vicino che stiamo analizzando
                     int neighbor_x = center_x + kx;
                     int neighbor_y = center_y + ky;
 
-                    // Recuperiamo il valore (safe handles out of bounds)
                     int pixel_val = input.get_pixel_safe(neighbor_x, neighbor_y);
 
-                    // Calcoliamo la distanza reale tra il punto mappato (float) e il vicino (int)
+                    // Distanza sub-pixel per il calcolo del peso
                     float dx = src_x - neighbor_x;
                     float dy = src_y - neighbor_y;
 
-                    // Calcolo peso
                     float weight = calculate_weight(dx, dy);
 
-                    // Accumulo
                     weighted_sum += pixel_val * weight;
                     total_weight += weight;
                 }
             }
 
-            // Normalizzazione e assegnazione
+            // Normalizzazione (Media Ponderata)
             if (total_weight > 0.0f) {
                 output.set_pixel(x_out, y_out, (int)(weighted_sum / total_weight));
             }
@@ -125,10 +105,6 @@ Image upscale_image(const Image& input) {
 
     return output;
 }
-
-// ==========================================
-// MAIN E UTILITY DI STAMPA
-// ==========================================
 
 void print_matrix(const Image& img, const std::string& title) {
     std::cout << "\n--- " << title << " (" << img.width << "x" << img.height << ") ---\n";
@@ -141,15 +117,11 @@ void print_matrix(const Image& img, const std::string& title) {
 }
 
 int main() {
-    // Esempio: Creiamo una piccola matrice 4x4
+    // Test case 4x4
     int w = 4, h = 4;
     Image input_img(w, h);
 
-    // Riempiamo con valori di test (es. gradiente o scacchiera)
-    // 10  20  10  20
-    // 20  80  80  20
-    // 20  80  80  20
-    // 10  20  10  20
+    // Pattern di test
     int values[] = {
         10, 20, 10, 20,
         20, 80, 80, 20,
@@ -157,16 +129,13 @@ int main() {
         10, 20, 10, 20
     };
 
-    // Copiamo i dati nel vettore
     for(int i=0; i < w*h; i++) input_img.data[i] = values[i];
 
-    // Mostra input
     print_matrix(input_img, "Input Matrix");
 
-    // Elaborazione
+    // Esecuzione algoritmo (Sequenziale CPU)
     Image output_img = upscale_image(input_img);
 
-    // Mostra output
     print_matrix(output_img, "Upscaled Matrix");
 
     return 0;

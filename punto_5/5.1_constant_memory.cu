@@ -21,9 +21,8 @@
 #define MAX_KERNEL_SIZE 25
 __constant__ float c_kernel[MAX_KERNEL_SIZE];
 
-// ========================================================================
 // KERNEL CUDA (Pre-Computed Weights + Naive Memory)
-// ========================================================================
+
 __global__ void upscale_kernel_constant(unsigned char* d_input, unsigned char* d_output, 
                                         int w_in, int h_in, int w_out, int h_out, 
                                         int channels, int radius) {
@@ -140,7 +139,7 @@ int main() {
 
     std::cout << "Tempo Ottimizzazione 1 (Constant Mem): " << milliseconds << " ms" << std::endl;
     
-    // ... (Salvataggio e free identici) ...
+    // Salvataggio e free identici alla versione precedente
     std::vector<unsigned char> h_img_out(out_size);
     CUDA_CHECK(cudaMemcpy(h_img_out.data(), d_output, out_size, cudaMemcpyDeviceToHost));
     stbi_write_png(output_path.c_str(), w_out, h_out, 3, h_img_out.data(), w_out * 3);

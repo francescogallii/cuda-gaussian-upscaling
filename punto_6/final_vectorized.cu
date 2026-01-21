@@ -27,10 +27,8 @@ __constant__ float c_kernel[MAX_KERNEL_SIZE];
 #define TILE_W (BLOCK_W + 2 * RADIUS)
 #define TILE_H (BLOCK_H + 2 * RADIUS)
 
-// ========================================================================
 // KERNEL CUDA (VECTORIZED - RGBA)
-// ========================================================================
-// Nota: Usiamo uchar4* per input e output. Leggiamo 4 byte alla volta.
+// Usiamo uchar4* per input e output. Leggiamo 4 byte alla volta.
 __global__ void upscale_kernel_vectorized(uchar4* d_input, uchar4* d_output, 
                                           int w_in, int h_in, int w_out, int h_out) {
     
@@ -144,7 +142,7 @@ int main(int argc, char** argv) {
     std::cin >> output_path;
 
     int w_in, h_in, channels_in_file;
-    // --- TRUCCO HOST: Carichiamo forzatamente a 4 canali (RGBA) ---
+    // --- Carichiamo forzatamente a 4 canali (RGBA) ---
     // Il '4' finale dice a stbi_load di convertire tutto in RGBA automaticamente.
     unsigned char* h_img_in = stbi_load(input_path.c_str(), &w_in, &h_in, &channels_in_file, 4);
     
@@ -155,7 +153,7 @@ int main(int argc, char** argv) {
 
     int w_out = w_in * 2;
     int h_out = h_in * 2;
-    // Nota: Ora la size è * 4, non * 3
+    // Ora la size è * 4, non * 3
     size_t in_size = w_in * h_in * 4; 
     size_t out_size = w_out * h_out * 4;
 

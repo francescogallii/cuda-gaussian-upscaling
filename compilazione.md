@@ -24,6 +24,8 @@ Utilizziamo `g++` per compilare la versione di riferimento che gira su CPU.
 g++ -O3 -Wall -Wextra upscaling_sequenziale.cpp -o upscaling_sequenziale -lm
 
 ```
+Per non mostrare gli Warning di compilazione dovuti alle librerie che usano una sintassi di inizializzazione vecchia
+
 
 **Spiegazione Flag:**
 
@@ -32,6 +34,11 @@ g++ -O3 -Wall -Wextra upscaling_sequenziale.cpp -o upscaling_sequenziale -lm
 * `-Wall -Wextra`: Attiva tutti i warning e messaggi di avviso extra (utile per intercettare errori e codice non pulito).
 * `-o upscaling_sequenziale`: Specifica il nome del file eseguibile in output.
 * `-lm`: Linka la libreria matematica standard (`libm`), necessaria per funzioni come `exp`, `pow`, etc.
+
+```bash
+g++ -O3 -Wall -Wextra -Wno-missing-field-initializers -Wno-unused-parameter upscaling_sequenziale.cpp -o upscaling_sequenziale -lm
+
+```
 
 ### Esecuzione
 

@@ -16,9 +16,7 @@
         exit(1); \
     }
 
-// ========================================================================
 // KERNEL CUDA (NAÏVE)
-// ========================================================================
 __global__ void upscale_kernel_naive(unsigned char* d_input, unsigned char* d_output, 
                                      int w_in, int h_in, int w_out, int h_out, 
                                      int channels, int radius, float sigma) {
@@ -71,9 +69,6 @@ __global__ void upscale_kernel_naive(unsigned char* d_input, unsigned char* d_ou
     }
 }
 
-// ========================================================================
-// MAIN (HOST CODE)
-// ========================================================================
 int main() {
     std::string input_path;
     std::cout << "Inserisci percorso immagine: ";
@@ -92,20 +87,20 @@ int main() {
     size_t in_size = w_in * h_in * 3 * sizeof(unsigned char);
     size_t out_size = w_out * h_out * 3 * sizeof(unsigned char);
 
-    // 1. Allocazione memoria sulla GPU (Device)
+    // Allocazione memoria sulla GPU (Device)
     unsigned char *d_input, *d_output;
     CUDA_CHECK(cudaMalloc(&d_input, in_size));
     CUDA_CHECK(cudaMalloc(&d_output, out_size));
 
-    // 2. Copia Host -> Device
+    // Copia Host -> Device
     CUDA_CHECK(cudaMemcpy(d_input, h_img_in, in_size, cudaMemcpyHostToDevice));
 
-    // 3. Configurazione Griglia e Blocchi (Passo 3)
+    // Configurazione Griglia e Blocchi (Passo 3)
     dim3 blockSize(16, 16);
     dim3 gridSize((w_out + blockSize.x - 1) / blockSize.x, 
                   (h_out + blockSize.y - 1) / blockSize.y);
 
-    // 4. Lancio Kernel e misurazione tempo con eventi CUDA
+    // Lancio Kernel e misurazione tempo con eventi CUDA
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
@@ -120,11 +115,11 @@ int main() {
 
     std::cout << "Tempo Kernel Naive: " << milliseconds << " ms" << std::endl;
 
-    // 5. Copia Device -> Host
+    // Copia Device -> Host
     std::vector<unsigned char> h_img_out(w_out * h_out * 3);
     CUDA_CHECK(cudaMemcpy(h_img_out.data(), d_output, out_size, cudaMemcpyDeviceToHost));
 
-    // 6. Salvataggio e pulizia
+    // Salvataggio e pulizia
     stbi_write_png(output_path.c_str(), w_out, h_out, 3, h_img_out.data(), w_out * 3);
     
     cudaFree(d_input);

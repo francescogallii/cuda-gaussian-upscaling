@@ -4,7 +4,7 @@ Questo file contiene tutti i comandi necessari per scaricare le dipendenze, comp
 
 ## 1. Download delle Librerie (Prerequisiti)
 
-Il progetto utilizza le librerie *stb* per la gestione delle immagini (lettura/scrittura). Esegui questi comandi nella cartella del progetto per scaricare gli header necessari.
+Il progetto utilizza le librerie *stb* per la gestione delle immagini (lettura/scrittura). Eseguiamo questi comandi nella cartella del progetto per scaricare gli header necessari.
 
 ```bash
 wget https://raw.githubusercontent.com/nothings/stb/master/stb_image.h
@@ -24,8 +24,6 @@ Utilizziamo `g++` per compilare la versione di riferimento che gira su CPU.
 g++ -O3 -Wall -Wextra upscaling_sequenziale.cpp -o upscaling_sequenziale -lm
 
 ```
-Per non mostrare gli Warning di compilazione dovuti alle librerie che usano una sintassi di inizializzazione vecchia
-
 
 **Spiegazione Flag:**
 
@@ -35,10 +33,17 @@ Per non mostrare gli Warning di compilazione dovuti alle librerie che usano una 
 * `-o upscaling_sequenziale`: Specifica il nome del file eseguibile in output.
 * `-lm`: Linka la libreria matematica standard (`libm`), necessaria per funzioni come `exp`, `pow`, etc.
 
+Per non mostrare gli Warning di compilazione dovuti alle librerie che usano una sintassi di inizializzazione vecchia
+
 ```bash
 g++ -O3 -Wall -Wextra -Wno-missing-field-initializers -Wno-unused-parameter upscaling_sequenziale.cpp -o upscaling_sequenziale -lm
 
 ```
+
+**Spiegazione Flag aggiuntivi:**
+
+* `-Wno-missing-field-initializers`: Dice al compilatore di ignorare l'avviso sulla sintassi {0} usata dalla libreria stb_image. È una vecchia sintassi C sicura, ma che i compilatori moderni segnalano come "incompleta" se si usa -Wextra.
+* `-Wno-unused-parameter`: Ignora l'avviso quando una funzione riceve parametri che poi non usa (come width e height nella nostra funzione get_dynamic_radius fissata a raggio 1).
 
 ### Esecuzione
 
@@ -51,9 +56,9 @@ g++ -O3 -Wall -Wextra -Wno-missing-field-initializers -Wno-unused-parameter upsc
 
 ## 3. Compilazione Codice CUDA (GPU)
 
-Utilizziamo `nvcc` (NVIDIA CUDA Compiler). Scegli il comando in base alla versione del kernel che vuoi testare.
+Utilizziamo `nvcc` (NVIDIA CUDA Compiler). Scegliamo il comando in base alla versione del kernel che vogliamo testare.
 
-**Nota sull'architettura:** Il flag `-arch=sm_75` è specifico per l'architettura **Turing** (NVIDIA GTX 1660 Ti). Se cambiassi scheda, dovresti aggiornare questo numero.
+**Nota sull'architettura:** Il flag `-arch=sm_75` è specifico per l'architettura **Turing** (NVIDIA GTX 1660 Ti). Se cambiassimo scheda video, dovresti aggiornare questo numero.
 
 ### A. Versione Baseline (Naïve)
 
@@ -93,8 +98,6 @@ nvcc -arch=sm_75 -lineinfo -o upscale_vectorized 5_3_vectorized.cu
 ---
 
 ## 4. Esecuzione Codice GPU
-
-Una volta compilati, puoi eseguire i programmi lanciandoli direttamente. Assicurati di avere le immagini di input nella stessa cartella (es. `paesaggio_fhd.jpg`).
 
 ```bash
 # Esecuzione standard (stampa il tempo a video)

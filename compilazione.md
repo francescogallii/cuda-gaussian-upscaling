@@ -58,7 +58,7 @@ g++ -O3 -Wall -Wextra -Wno-missing-field-initializers -Wno-unused-parameter upsc
 
 Utilizziamo `nvcc` (NVIDIA CUDA Compiler). Scegliamo il comando in base alla versione del kernel che vogliamo testare.
 
-**Nota sull'architettura:** Il flag `-arch=sm_75` è specifico per l'architettura **Turing** (NVIDIA GTX 1660 Ti). Se cambiassimo scheda video, dovresti aggiornare questo numero.
+**Nota sull'architettura:** Il flag `-arch=sm_75` è specifico per l'architettura **Turing** (NVIDIA GTX 1660 Ti). Se cambiassimo scheda video, dovremmo aggiornare questo numero.
 
 ### A. Versione Baseline (Naïve)
 
